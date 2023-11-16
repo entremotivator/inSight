@@ -2,6 +2,29 @@ import streamlit as st
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+import cohere
+import weaviate
+from langchain.vectorstores import Weaviate
+
+co = cohere.Client('COHERE_API_KEY')
+client = weaviate.Client(
+    url="WEAVIATE_URL",  # Replace with your endpoint
+    auth_client_secret=weaviate.AuthApiKey(api_key="WEAVIATE_API_KEY"),
+    # Replace w/ your Weaviate instance API key
+)
+
+
+def get_embeddings(text_chunks):
+    embeddings = []
+    for chunk in text_chunks:
+        response = co.embed(
+            texts=[chunk],
+            model='embed-english-v3.0',
+            input_type='search_document'
+        )
+        current_embedding = response.embeddings  # Access the 'embeddings' attribute directly
+        embeddings.append(current_embedding)
+    return embeddings
 
 
 def get_pdf_text(pdf_papers):
@@ -46,6 +69,11 @@ def main():
             st.write(raw_text)
 
             text_chunks = get_text_chunks(raw_text)
+            embeddings = get_embeddings(text_chunks)
+
+            vectorstore = Weaviate.from_texts(
+                text_chunks, embeddings, client=client,
+            )
 
 
 if __name__ == "__main__":
