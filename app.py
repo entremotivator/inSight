@@ -2,29 +2,56 @@ import streamlit as st
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings.cohere import CohereEmbeddings
 import cohere
 import weaviate
-from langchain.vectorstores import Weaviate
+from langchain.vectorstores.weaviate import Weaviate
+import os
 
-co = cohere.Client('COHERE_API_KEY')
+load_dotenv()
+YOUR_COHERE_KEY = os.getenv('COHERE_API_KEY')
+YOUR_WEAVIATE_KEY = os.getenv('WEAVIATE_API_KEY')
+YOUR_WEAVIATE_URL = os.getenv('WEAVIATE_URL')
+co = cohere.Client(YOUR_COHERE_KEY)
+
+
 client = weaviate.Client(
-    url="WEAVIATE_URL",  # Replace with your endpoint
-    auth_client_secret=weaviate.AuthApiKey(api_key="WEAVIATE_API_KEY"),
-    # Replace w/ your Weaviate instance API key
+    url='https://insight-enkxkddw.weaviate.network',  # Replace with your endpoint
+    auth_client_secret=weaviate.AuthApiKey(api_key=YOUR_WEAVIATE_KEY),
+    additional_headers={
+        "X-Cohere-Api-Key": YOUR_COHERE_KEY # Replace with your inference API key
+    }
 )
+client.schema.delete_all()
+client.schema.get()
+schema = {
+    "classes":[
+        {
+            "class": "InSightChatbot",
+            "description": "Documents for chatbot",
+            "vectorizer": "text2vec-cohere",
+            "moduleConfig": {
+                "text2vec-cohere": {"model": "embed-english-light-v3.0", "truncate": "RIGHT"},
+            },
+            "properties": [
+                {
+                    "dataType": ["text"],
+                    "description": "The content of the paragraph",
+                    "moduleConfig": {
+                        "text2vec-cohere": {
+                            "skip": False,
+                            "vectorizePropertyName": False,
+                        }
+                    },
+                    "name": "content",
+                },
+            ],
+        }
+    ]
+}
 
-
-def get_embeddings(text_chunks):
-    embeddings = []
-    for chunk in text_chunks:
-        response = co.embed(
-            texts=[chunk],
-            model='embed-english-v3.0',
-            input_type='search_document'
-        )
-        current_embedding = response.embeddings  # Access the 'embeddings' attribute directly
-        embeddings.append(current_embedding)
-    return embeddings
+client.schema.create(schema)
+# vectorstore = Weaviate(client, "InSightChatbot", "content", attributes=["source"])
 
 
 def get_pdf_text(pdf_papers):
@@ -51,8 +78,20 @@ def get_text_chunks(text):
     return chunks
 
 
+def get_embeddings(text_chunks):
+    embeddings = CohereEmbeddings(model="embed-english-light-v3.0", cohere_api_key=YOUR_COHERE_KEY)
+    res = embeddings.aembed_query(text_chunks)
+    return res
+
+
+def vector_store(text_chunks, my_embeddings):
+    vectorstore = Weaviate.afrom_texts(
+        text_chunks, my_embeddings, client=client, by_text=False
+    )
+
+
+
 def main():
-    load_dotenv()
     st.set_page_config(page_title="Research InSight", page_icon=":books:")
     st.header("Dive deeper into your researches :books:")
     st.text_input("Ask a question about your document")
@@ -66,14 +105,16 @@ def main():
             st.spinner("Getting InSight...")
 
             raw_text = get_pdf_text(pdf_papers)
-            st.write(raw_text)
+            st.success("Text extracted successfully!")
 
             text_chunks = get_text_chunks(raw_text)
-            embeddings = get_embeddings(text_chunks)
+            st.success("Chunks created successfully!")
 
-            vectorstore = Weaviate.from_texts(
-                text_chunks, embeddings, client=client,
-            )
+            embeddings = get_embeddings(text_chunks)
+            st.success("Embeddings created successfully!")
+
+            vector_store(text_chunks, embeddings)
+            st.success("Embeddings stored successfully in Weaviate!")
 
 
 if __name__ == "__main__":
