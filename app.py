@@ -57,7 +57,7 @@ def get_text_chunks(text):
 
 
 def get_embeddings(text_chunks):
-    embeddings = CohereEmbeddings(model="embed-english-light-v3.0", cohere_api_key=YOUR_COHERE_KEY)
+    embeddings = CohereEmbeddings(model="embed-english-light-v3.0", cohere_api_key="sVJA7HdS9Doo9if2THD84hgA3BTVz1UYYNPpZRRq")
     vectorstore = Weaviate.from_texts(
         text_chunks, embeddings, client=client, by_text=False
     )
