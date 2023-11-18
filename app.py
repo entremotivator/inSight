@@ -17,6 +17,9 @@ import asyncio
 from langchain.retrievers import CohereRagRetriever
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+import time
+import uuid
+conversation_id = str(uuid.uuid4())
 
 
 load_dotenv()
@@ -46,7 +49,7 @@ def get_pdf_text(pdf_papers):
 def get_text_chunks(text):
     text_splitter = RecursiveCharacterTextSplitter(
         separators=["\n"],
-        chunk_size=1024,
+        chunk_size=3000,
         chunk_overlap=256,
         length_function=len
     )
@@ -65,8 +68,6 @@ def get_embeddings(text_chunks):
     return vectorstore
 
 def get_conversation_chain(vectorstore):
-    #loop = asyncio.new_event_loop()
-    #retriever = loop.run_until_complete(get_retriever_async(vectorstore))
 
     llm = ChatCohere()
 
@@ -78,6 +79,8 @@ def get_conversation_chain(vectorstore):
         memory=memory
     )
     return conversation_chain
+
+
 
 def handle_userinput(user_question):
     response = st.session_state.conversation({'question': user_question})
@@ -94,22 +97,34 @@ def handle_userinput(user_question):
 
 
 def main():
-    st.set_page_config(page_title="Research InSight", page_icon=":books:")
+    st.set_page_config(page_title="Research InSight", page_icon=":books:",menu_items={
+        'Get help':'https://www.linkedin.com/in/kanishk-pratap-singh-94857a1ba/'
+    })
     st.write(css, unsafe_allow_html=True)
     if "conversation" not in st.session_state:
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = None
     st.header("Dive deeper into your researches :books:")
-    user_question= st.text_input("Ask a question about your document")
+    user_question= st.chat_input("Ask a question about your document")
     if user_question:
         handle_userinput(user_question)
 
+
     with st.sidebar:
-        st.subheader("Your Research PDFs")
+        st.subheader("Submit Your Research PDFs")
         pdf_papers = st.file_uploader(
             "Upload your PDFs here!",
             accept_multiple_files=True)
+        progress_text = "Operation in progress..."
+        my_bar = st.progress(0, text=progress_text)
+
+        for percent_complete in range(100):
+            time.sleep(0.01)
+            my_bar.progress(percent_complete + 1, text=progress_text)
+        time.sleep(1)
+        my_bar.empty()
+
         if st.button("Process"):
             st.spinner("Getting InSight...")
 
@@ -122,10 +137,17 @@ def main():
             vectorstore = get_embeddings(text_chunks)
             st.success("Embeddings created successfully!")
 
-            #vectorstore=vector_store(text_chunks, embeddings)
-            #st.success("Embeddings stored successfully in Weaviate!")
             st.session_state.conversation = get_conversation_chain(
-                vectorstore)
+               vectorstore)
+
+    st.divider()
+    if st.button("Summary"):
+        st.spinner("Generating Summary...")
+        response = co.summarize(
+            text=get_pdf_text(pdf_papers),
+        )
+        st.write(response.summary)
+    st.divider()
 
 
 if __name__ == "__main__":
