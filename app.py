@@ -22,6 +22,7 @@ conversation_id = str(uuid.uuid4())
 
 
 load_dotenv()
+COHERE_API_KEY="sVJA7HdS9Doo9if2THD84hgA3BTVz1UYYNPpZRRq"
 co = cohere.Client("sVJA7HdS9Doo9if2THD84hgA3BTVz1UYYNPpZRRq")
 
 
