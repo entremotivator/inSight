@@ -13,7 +13,6 @@ from langchain.chains import ConversationalRetrievalChain
 from htmlTemplates import css, bot_template, user_template
 from langchain.chat_models import ChatCohere
 from langchain.schema import HumanMessage
-import asyncio
 from langchain.retrievers import CohereRagRetriever
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
@@ -23,10 +22,7 @@ conversation_id = str(uuid.uuid4())
 
 
 load_dotenv()
-YOUR_COHERE_KEY = os.getenv('COHERE_API_KEY')
-YOUR_WEAVIATE_KEY = os.getenv('WEAVIATE_API_KEY')
-YOUR_WEAVIATE_URL = os.getenv('WEAVIATE_URL')
-co = cohere.Client(YOUR_COHERE_KEY)
+co = cohere.Client(sVJA7HdS9Doo9if2THD84hgA3BTVz1UYYNPpZRRq)
 
 
 client = weaviate.Client(
