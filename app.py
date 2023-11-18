@@ -31,9 +31,9 @@ co = cohere.Client(YOUR_COHERE_KEY)
 
 client = weaviate.Client(
     url='https://insight-enkxkddw.weaviate.network',  # Replace with your endpoint
-    auth_client_secret=weaviate.AuthApiKey(api_key=YOUR_WEAVIATE_KEY),
+    auth_client_secret=weaviate.AuthApiKey(api_key="7nPY67SDmhoeUQUPgsR4GCpJqdkjXMOamBtR"),
     additional_headers={
-        "X-Cohere-Api-Key": YOUR_COHERE_KEY # Replace with your inference API key
+        "X-Cohere-Api-Key": "sVJA7HdS9Doo9if2THD84hgA3BTVz1UYYNPpZRRq" # Replace with your inference API key
     }
 )
 def get_pdf_text(pdf_papers):
